@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNITECH</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='lodgdu.png') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+    
+        .modal-content {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 80%; /* Adjust the width as needed */
+            max-height: 80%; /* Adjust the height as needed */
+            overflow: auto;
+            animation: modalOpenAnimation 0.3s ease-in-out; /* Animation when opening the modal */
+        }
+    
+        .close-btn {
+            cursor: pointer;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #ddd;
+            border-radius: 4px;
+            text-align: center;
+            transition: background-color 0.3s ease-in-out;
+        }
+    
+        .close-btn:hover {
+            background-color: #ccc;
+        }
+    
+        @keyframes modalOpenAnimation {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    
+        @keyframes modalCloseAnimation {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+        }
+
+        /* Add this to your CSS file or in a <style> tag in your HTML */
+            body {
+                opacity: 0;
+                animation: fadeIn 0.5s ease-in-out forwards;
+                
+            }
+            
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            #mobileMenuBtn {
+                display: none; /* Initially hidden on large screens */
+            }
+            
+            #mobileMenu {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 60px; /* Adjust as needed */
+                right: 10px; /* Adjust as needed */
+                background-color: #333; /* Adjust background color as needed */
+                padding: 10px;
+            }
+            
+            #mobileMenu button {
+                display: block;
+                margin-bottom: 8px; /* Adjust as needed */
+            }
+            
+
+            
+    </style>
+    
+    
+    
+</head>
+<body class="flex flex-col h-screen">
+    <!-- Navbar -->
+    <nav class="bg-gray-800 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <img src="{{ url_for('static', filename='lodgdu.png') }}" alt="logo" class="h-10 w-30">
+
+            </div>
+            <div class="flex space-x-4">
+                <!-- Button 1: Upload Data -->
+                <button class="text-white hover:text-gray-300" onclick="uploadData()">Upload Data</button>
+                <!-- Button 2: See Docs -->
+                <button class="text-white hover:text-gray-300" onclick="seeDocs()">See Docs</button>
+                <!-- Add this button inside your Navbar or wherever you want -->
+                <!-- Button 3: API Key -->
+                <button class="text-white hover:text-gray-300" onclick="apiKey()" hidden>API Key</button>
+            </div>
+        </div>
+    </nav>
+
+<!-- Main content -->
+<div id="chat" class="flex-1 overflow-y-auto p-4">
+    <div class="text-center mb-4">
+        <h1 id="chatbotHeading" class="text-2xl font-bold text-gray-800">UNITECH Chat bot</h1>
+        <p id="welcomeMessage" class="text-sm text-gray-600">For internal use only!</p>
+    </div>
+    <!-- Messages will be displayed here -->
+</div>
+
+ 
+
+    <!-- Input field, Send button, and backend communication -->
+    <div class="flex items-center justify-center p-4 bg-gray-800">
+        <input id="messageInput" type="text" placeholder="Type your message here" class="p-2 w-full border border-gray-300 rounded bg-gray-600 text-white">
+        <button class="ml-2 bg-blue-500 text-white p-2 rounded" onclick="sendMessage()">Send</button>
+    </div>
+    <!-- Add this div wherever you want in your HTML body -->
+<div id="uploadedFiles"></div>
+
+
+    <script>
+            const chatDiv = document.getElementById('chat');
+            const messageInput = document.getElementById('messageInput');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const chatbotHeading = document.getElementById('chatbotHeading');
+
+
+            document.addEventListener('DOMContentLoaded', () => {
+                // Add the fade-in class to the main content div (#chat) after the page has loaded
+                document.body.classList.add('fade-in')
+            });
+
+          
+
+            async function uploadData() {
+                const formData = new FormData();
+                // Create a hidden file input
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.pdf';  // Set accepted file type if needed
+                fileInput.style.display = 'none';
+                document.body.appendChild(fileInput);
+            
+                // Listen for the change event on the file input
+                fileInput.addEventListener('change', async (event) => {
+                    const file = event.target.files[0];
+                    formData.append('file', file);
+                    document.body.removeChild(fileInput);  // Remove the file input after handling the file
+            
+                    // Send the file data to the server
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+            
+                    if (response.ok) {
+                        // Handle successful upload
+                        Toastify({
+                            text: 'File uploaded successfully!',
+                            duration: 3000, // Set the duration for the notification in milliseconds
+                            gravity: 'top', // Set the position of the notification
+                            position: 'center', // Set the position of the notification
+                            backgroundColor: '#38E54D', // Customize the background color
+                        }).showToast();
+            
+                        // Trigger the script after a short delay (adjust as needed)
+                        setTimeout(runScript, true);
+                    } else {
+                        // Handle upload failure
+                        Toastify({
+                            text: 'Error uploading file!',
+                            duration: 3000, // Set the duration for the notification in milliseconds
+                            gravity: 'top', // Set the position of the notification
+                            position: 'center', // Set the position of the notification
+                            backgroundColor: '#FF4A4A', // Customize the background color
+                        }).showToast();
+                    }
+                });
+            
+                // Trigger a click on the hidden file input
+                fileInput.click();
+                
+                // Wait for the user to select a file and handle the 'change' event
+                await new Promise((resolve) => {
+                    fileInput.addEventListener('change', resolve, { once: true });
+                });
+            }
+                        
+            
+
+            async function seeDocs() {
+                const response = await fetch('/see_docs');
+            
+                if (response.ok) {
+                    const result = await response.json();
+                    const uploadedFiles = result.uploaded_files;
+            
+                    // Create a modal container
+                    const modalContainer = document.createElement('div');
+                    modalContainer.id = 'modalContainer';
+                    modalContainer.className = 'modal';
+            
+                    // Display the list of uploaded files in the modal
+                    const modalContent = document.createElement('div');
+                    modalContent.className = 'modal-content';
+            
+                    if (uploadedFiles.length > 0) {
+                        const fileList = document.createElement('ul');
+                        fileList.className = 'list-disc pl-4'; // Use Tailwind class for list styling
+                        uploadedFiles.forEach((file) => {
+                            const listItem = document.createElement('li');
+                            listItem.innerText = file;
+            
+                            const deleteButton = document.createElement('button');
+                            deleteButton.innerText = 'Delete';
+                            deleteButton.className = 'ml-2 bg-red-500 text-white p-2 rounded'; // Use Tailwind class for styling
+                            deleteButton.onclick = () => deleteFile(file);
+            
+                            listItem.appendChild(deleteButton);
+                            fileList.appendChild(listItem);
+                        });
+            
+                        modalContent.appendChild(fileList);
+                    } else {
+                        modalContent.innerText = 'No uploaded files found.';
+                    }
+            
+                    // Close button
+                    const closeButton = document.createElement('div');
+                    closeButton.innerText = 'Close';
+                    closeButton.className = 'close-btn';
+                    closeButton.onclick = () => modalContainer.style.display = 'none';
+                   
+            
+                    modalContent.appendChild(closeButton);
+            
+                    modalContainer.appendChild(modalContent);
+            
+                    // Add the modal to the document body
+                    document.body.appendChild(modalContainer);
+            
+                    // Open the modal
+                    modalContainer.style.display = 'flex';
+                // Close the modal when clicking outside of it
+                    window.onclick = function (event) {
+                        if (event.target === modalContainer) {
+                            modalContainer.style.display = 'none';
+                            // Remove modal container from the DOM when closing
+                            document.body.removeChild(modalContainer);
+                        }
+                    };
+                } else {
+                    alert('Failed to fetch uploaded files.');
+                }
+            }          
+            async function deleteFile(fileName) {
+                const response = await fetch(`/delete_file/${fileName}`, {
+                    method: 'DELETE',
+                });
+            
+                if (response.ok) {
+                    // Update the modal content or close/reopen the modal as needed
+                   Toastify({
+                            text: `File ${fileName} deleted successfully!`,
+                            duration: 3000, // Set the duration for the notification in milliseconds
+                            gravity: 'top', // Set the position of the notification
+                            position: 'center', // Set the position of the notification
+                            backgroundColor: '#FF4A4A', // Customize the background color
+                        }).showToast();
+            
+                    // Load the knowledge base
+                    const knowledgeBaseResponse = await fetch('/load_knowledge_base');
+                    if (knowledgeBaseResponse.ok) {
+                        const knowledgeBase = await knowledgeBaseResponse.json();
+            
+                        // Find and remove entries related to the deleted file
+                        const updatedKnowledgeBase = knowledgeBase.filter(entry => entry.pdf_name !== fileName);
+            
+                        // Save the updated knowledge base back to the JSON file
+                        const saveResponse = await fetch('/save_knowledge_base', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(updatedKnowledgeBase),
+                        });
+            
+                        if (saveResponse.ok) {
+                            // Handle successful save if needed
+                            console.log('Knowledge base updated successfully.');
+                        } else {
+                            // Handle save failure
+                            console.error('Failed to update knowledge base.');
+                        }
+                    } else {
+                        // Handle knowledge base fetch failure
+                        console.error('Failed to fetch knowledge base.');
+                    }
+                } else {
+                    Toastify({
+                        text: `Failed to delete ${fileName} !`,
+                        duration: 3000, // Set the duration for the notification in milliseconds
+                        gravity: 'top', // Set the position of the notification
+                        position: 'center', // Set the position of the notification
+                        backgroundColor: '#FF4A4A', // Customize the background color
+                    }).showToast();
+                }
+            }
+            
+        async function sendMessage() {
+            const userMessage = messageInput.value;
+            if (userMessage.trim() !== '') {
+                // hide the welcomeMessage and heading
+                chatbotHeading.style.display = 'none';
+
+                welcomeMessage.style.display = 'none';
+
+                appendMessage(userMessage, true);
+                messageInput.value = ''; // Clear the input field
+
+                appendMessage('UNITECH bot is typing...', false);
+        
+                // Send the user message to the server
+                const response = await fetch('/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded', // Set content type to form data
+                    },
+                    body: new URLSearchParams({ message: userMessage }), // Send data as form data
+                });
+        
+                if (response.ok) {
+                    // Process the server response
+                    const result = await response.json();
+                    const botResponse = result.bot_response;
+                    chatDiv.removeChild(chatDiv.lastChild);
+
+                    appendMessage(botResponse, false);
+                } else {
+                    // Handle server error
+                    console.error('Failed to send message to the server');
+                }
+        
+                
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            }
+        }
+// Function to append a message to the chat
+function appendMessage(message, isUser) {
+    const messageClass = isUser ? 'bg-blue-500 text-white' : 'bg-gray-300';
+    const copyButton = document.createElement('button');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `p-2 mb-2 rounded ${messageClass} relative`; // Add 'relative' class
+
+    // Message text
+    const messageText = document.createElement('p');
+    messageText.innerText = message;
+    messageText.style.paddingRight = '2rem'; // Add padding to the right side of the text
+
+    // Conditionally add copy button to bot's message
+    if (!isUser) {
+        // Copy button
+        copyButton.innerHTML = '<i class="material-icons">copy</i>';
+        copyButton.className = 'absolute top-0 right-0 mr-2 mt-2 bg-green-500 text-white p-1 rounded';
+        copyButton.style.display = 'none'; // Initially hidden
+        copyButton.onclick = () => copyResponse(copyButton);
+
+        // Append copy button to the message div
+        messageDiv.appendChild(copyButton);
+    }
+
+    // Show copy button on hover
+    messageDiv.addEventListener('mouseenter', () => {
+        copyButton.style.display = 'block'; // Show the copy button
+    });
+
+    // Hide copy button when not hovering
+    messageDiv.addEventListener('mouseleave', () => {
+        copyButton.style.display = 'none'; // Hide the copy button
+    });
+
+    // Append message text to the message div
+    messageDiv.appendChild(messageText);
+
+    // Append message div to the chat div
+    chatDiv.appendChild(messageDiv);
+}
+
+
+
+const copyResponse = (copyBtn) => {
+    // Copy the text content of the response to the clipboard
+    const responseTextElement = copyBtn.parentElement.querySelector("p");
+    navigator.clipboard.writeText(responseTextElement.textContent);
+    copyBtn.innerHTML = '<i class="material-icons">done</i>';
+    setTimeout(() => {
+        copyBtn.innerHTML = '<i class="material-icons">copy</i>';
+    }, 1000);
+};
+
+
+        // Event listener for the Enter key
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+    </script>
+</body>
+</html>
