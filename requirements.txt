@@ -1,0 +1,16 @@
+joblib
+charset_normalizer
+flask[async]
+openai==0.27.7
+flask
+pygame
+pipwin
+plotly
+matplotlib
+pypdf2
+numpy
+requests
+gunicorn
+pandas
+scipy
+scikit-learn
