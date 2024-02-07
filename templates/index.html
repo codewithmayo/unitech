@@ -342,45 +342,61 @@
                 }
             }
             
-        async function sendMessage() {
-            const userMessage = messageInput.value;
-            if (userMessage.trim() !== '') {
-                // hide the welcomeMessage and heading
-                chatbotHeading.style.display = 'none';
-
-                welcomeMessage.style.display = 'none';
-
-                appendMessage(userMessage, true);
-                messageInput.value = ''; // Clear the input field
-
-                appendMessage('UNITECH bot is typing...', false);
-        
-                // Send the user message to the server
-                const response = await fetch('/send_message', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded', // Set content type to form data
-                    },
-                    body: new URLSearchParams({ message: userMessage }), // Send data as form data
-                });
-        
-                if (response.ok) {
-                    // Process the server response
-                    const result = await response.json();
-                    const botResponse = result.bot_response;
-                    chatDiv.removeChild(chatDiv.lastChild);
-
-                    appendMessage(botResponse, false);
-                } else {
-                    // Handle server error
-                    console.error('Failed to send message to the server');
+            async function sendMessage() {
+                const userMessage = messageInput.value;
+                if (userMessage.trim() !== '') {
+                    // hide the welcomeMessage and heading
+                    chatbotHeading.style.display = 'none';
+                    welcomeMessage.style.display = 'none';
+                    
+                    appendMessage(userMessage, true);
+                    messageInput.value = ''; // Clear the input field
+                    
+                    // Check internet connectivity
+                    if (!navigator.onLine) {
+                        appendMessage('Error: There is no internet connection.', false);
+                        chatDiv.scrollTop = chatDiv.scrollHeight;
+                        return;
+                    }
+                    
+                    appendMessage('UNITECH bot is typing...', false);
+                    
+                    try {
+                        // Send the user message to the server
+                        const response = await fetch('/send_message', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded', // Set content type to form data
+                            },
+                            body: new URLSearchParams({ message: userMessage }), // Send data as form data
+                        });
+                        
+                        if (response.ok) {
+                            // Process the server response
+                            const result = await response.json();
+                            const botResponse = result.bot_response;
+                            chatDiv.removeChild(chatDiv.lastChild);
+                            
+                            appendMessage(botResponse, false);
+                        } else {
+                            // Handle server error
+                            throw new Error('Server error');
+                        }
+                    } catch (error) {
+                        // Handle errors
+                        console.error(error);
+                        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                            appendMessage('Error: There was a problem connecting to the server.', false);
+                        } else {
+                            appendMessage('Error: There was a problem processing your request.', false);
+                        }
+                    }
+                    
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
                 }
-        
-                
-                chatDiv.scrollTop = chatDiv.scrollHeight;
-
             }
-        }
+            
+                        
 // Function to append a message to the chat
 function appendMessage(message, isUser) {
     const messageClass = isUser ? 'bg-blue-500 text-white' : 'bg-gray-300';
