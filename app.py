@@ -26,8 +26,6 @@ if os.path.exists(app.config['UPLOADED_FILES_FILE']):
 else:
     uploaded_files = []
 
-print(f"The uploaded files are: {uploaded_files}")
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -35,8 +33,9 @@ def index():
 @app.route('/send_message', methods=['POST'])
 def send_message():
     user_message = request.form.get('message')
-    print(user_message)
+    print(f"User message: {user_message}")
     bot_response = get_answer(user_message)
+    print(f"Server response: {bot_response}")
 
     return jsonify({'user_message': user_message, 'bot_response': bot_response})
 
