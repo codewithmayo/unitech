@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import time
@@ -7,7 +6,6 @@ from concurrent.futures import ThreadPoolExecutor
 import PyPDF2
 import numpy as np
 import openai
-import requests
 from flask import Flask, render_template, request, jsonify
 from openai.embeddings_utils import cosine_similarity
 from openai.embeddings_utils import get_embedding
@@ -19,14 +17,11 @@ app.config['UPLOADED_FILES_FILE'] = 'uploaded_files.json'
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Placeholder data storage for uploaded files
 if os.path.exists(app.config['UPLOADED_FILES_FILE']):
     with open(app.config['UPLOADED_FILES_FILE'], 'r') as file:
         uploaded_files = json.load(file)
 else:
     uploaded_files = []
-
-print(f"The uploaded files are: {uploaded_files}")
 
 @app.route('/')
 def index():
@@ -35,8 +30,9 @@ def index():
 @app.route('/send_message', methods=['POST'])
 def send_message():
     user_message = request.form.get('message')
-    print(user_message)
+    print(f"User message: {user_message}")
     bot_response = get_answer(user_message)
+    print(f"Server response: {bot_response}")
 
     return jsonify({'user_message': user_message, 'bot_response': bot_response})
 
@@ -82,16 +78,6 @@ def delete_file(filename):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-
-
-
-
-
-@app.route('/api_key', methods=['POST'])
-def api_key():
-    api_key = request.form.get('api_key')
-
-    return jsonify({'success': True, 'message': 'API key saved successfully'})
 
 
 def get_context(inputPrompt, top_k):

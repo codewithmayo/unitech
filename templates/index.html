@@ -106,19 +106,17 @@
                 margin-bottom: 8px; /* Adjust as needed */
             }
             
-
-            
     </style>
     
     
     
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen width-full">
     <!-- Navbar -->
     <nav class="bg-gray-800 p-4">
         <div class="flex items-center justify-between">
             <div>
-                <img src="{{ url_for('static', filename='lodgdu.png') }}" alt="logo" class="h-10 w-30">
+                <img src="{{ url_for('static', filename='lodgdu.png') }}" alt="logo" class="h-10 w-full">
 
             </div>
             <div class="flex space-x-4">
@@ -126,9 +124,6 @@
                 <button class="text-white hover:text-gray-300" onclick="uploadData()">Upload Data</button>
                 <!-- Button 2: See Docs -->
                 <button class="text-white hover:text-gray-300" onclick="seeDocs()">See Docs</button>
-                <!-- Add this button inside your Navbar or wherever you want -->
-                <!-- Button 3: API Key -->
-                <button class="text-white hover:text-gray-300" onclick="apiKey()" hidden>API Key</button>
             </div>
         </div>
     </nav>
@@ -149,7 +144,6 @@
         <input id="messageInput" type="text" placeholder="Type your message here" class="p-2 w-full border border-gray-300 rounded bg-gray-600 text-white">
         <button class="ml-2 bg-blue-500 text-white p-2 rounded" onclick="sendMessage()">Send</button>
     </div>
-    <!-- Add this div wherever you want in your HTML body -->
 <div id="uploadedFiles"></div>
 
 
@@ -342,45 +336,63 @@
                 }
             }
             
-        async function sendMessage() {
-            const userMessage = messageInput.value;
-            if (userMessage.trim() !== '') {
-                // hide the welcomeMessage and heading
-                chatbotHeading.style.display = 'none';
+            async function sendMessage() {
+                const userMessage = messageInput.value;
+                if (userMessage.trim() !== '') {
+                    // hide the welcomeMessage and heading
+                    chatbotHeading.style.display = 'none';
+                    welcomeMessage.style.display = 'none';
+                    
+                    appendMessage(userMessage, true);
+                    messageInput.value = ''; // Clear the input field
+                    
+                    // Check internet connectivity
+                    if (!navigator.onLine) {
+                        appendMessage('Error: There is no internet connection.', false);
+                        chatDiv.scrollTop = chatDiv.scrollHeight;
+                        return;
+                    }
+                    
+                    appendMessage('UNITECH bot is typing...', false);
+                    
 
-                welcomeMessage.style.display = 'none';
-
-                appendMessage(userMessage, true);
-                messageInput.value = ''; // Clear the input field
-
-                appendMessage('UNITECH bot is typing...', false);
-        
-                // Send the user message to the server
-                const response = await fetch('/send_message', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded', // Set content type to form data
-                    },
-                    body: new URLSearchParams({ message: userMessage }), // Send data as form data
-                });
-        
-                if (response.ok) {
-                    // Process the server response
-                    const result = await response.json();
-                    const botResponse = result.bot_response;
-                    chatDiv.removeChild(chatDiv.lastChild);
-
-                    appendMessage(botResponse, false);
-                } else {
-                    // Handle server error
-                    console.error('Failed to send message to the server');
+                    
+                    try {
+                        // Send the user message to the server
+                        const response = await fetch('/send_message', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded', // Set content type to form data
+                            },
+                            body: new URLSearchParams({ message: userMessage }), // Send data as form data
+                        });
+                        
+                        if (response.ok) {
+                            // Process the server response
+                            const result = await response.json();
+                            const botResponse = result.bot_response;
+                            chatDiv.removeChild(chatDiv.lastChild);
+                            
+                            appendMessage(botResponse, false);
+                        } else {
+                            // Handle server error
+                            throw new Error('Server error');
+                        }
+                    } catch (error) {
+                        // Handle errors
+                        console.error(error);
+                        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                            appendMessage('Error: There was a problem connecting to the server.', false);
+                        } else {
+                            appendMessage('Error: There was a problem processing your request.', false);
+                        }
+                    }
+                    
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
                 }
-        
-                
-                chatDiv.scrollTop = chatDiv.scrollHeight;
-
             }
-        }
+            
+                        
 // Function to append a message to the chat
 function appendMessage(message, isUser) {
     const messageClass = isUser ? 'bg-blue-500 text-white' : 'bg-gray-300';
@@ -424,6 +436,9 @@ function appendMessage(message, isUser) {
 
 
 
+
+
+
 const copyResponse = (copyBtn) => {
     // Copy the text content of the response to the clipboard
     const responseTextElement = copyBtn.parentElement.querySelector("p");
@@ -433,7 +448,6 @@ const copyResponse = (copyBtn) => {
         copyBtn.innerHTML = '<i class="material-icons">copy</i>';
     }, 1000);
 };
-
 
         // Event listener for the Enter key
         messageInput.addEventListener('keydown', (event) => {
